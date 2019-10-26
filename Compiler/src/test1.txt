@@ -1,6 +1,18 @@
 {
   int a
-  a = a
-  string b
-  a = b
-}$
+  int b
+  a = 0
+  b=0
+  while (a != 3) {
+  print(a)
+  while (b != 3) {
+  print(b)
+  b = 1 + b
+  if (b == 2) {
+  }
+  }
+  b = 0
+  a = 1+a
+  }
+  }
+  $

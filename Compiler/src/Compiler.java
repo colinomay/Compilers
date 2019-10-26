@@ -21,53 +21,51 @@ public class Compiler{
         System.out.println("INFO  Lexer - Lexing program " + (programs.size()+1) + "...");
         for (int i = 0; i < lines.size(); i++) {
             char[] line = lines.get(i).toString().toLowerCase().toCharArray();
-            System.out.println("Line Size: " + line.length);
+            //System.out.println("Line Size: " + line.length);
             for (int j = 0; j < line.length; j++) {
                 temp = temp + line[j];
-                System.out.println("Character: " +line[j]);
-                System.out.println("Temp: " + temp);
-                System.out.println("Current match: " +match);
-                if (Character.isWhitespace(line[j])) {
-                    System.out.println(temp.length());
-                    if(match.length() > 0) {
-                        tokens.add(match);
-                        System.out.println("DEBUG Lexer - " +  match_name + " [ " + match + " ] found at (" + i + ":" + (j -match.length()+1) + ")");
-                        j = j - (temp.length() - match.length());
-                    } else if(temp.length() > 1) {
-                        System.out.println("ERROR Lexer - Error:" + (i+1) + ":" + (j+1) + " Unrecognized Token: " + temp);
-                    }
-                } else if (temp.equals("$")) {
-                    tokens.add("$");
-                    System.out.println("DEBUG Lexer - EOP [ $ ] found at (" + (i+1) + ":" + (j -match.length()+1) + ")");
-                    programs.add(tokens);
-                    //for(int y = 0; y < tokens.size(); y++) {
-                        //System.out.print(tokens.get(y));
-                    //}
-                    tokens.clear();
-                }
-                else {
-                    for(int x = 0; x < dictionary.size(); x++) {
-                        if(temp.equals(dictionary.get(x).getValue())) {
+                //System.out.println("Character: " +line[j]);
+                //System.out.println("Temp: " + temp);
+                //System.out.println("Current match: " +match);
+                boolean flag = false;
+                for(int x = 0; x < dictionary.size(); x++) {
+                    if (temp.equals(dictionary.get(x).getValue())) {
+                        if (temp.equals(" ")) {
+                            temp = "";
+                        } else {
                             match = temp;
-                            {
-                                if(match.length() < 2)
-                                    position = j;
-                            }
-                            System.out.println("New Match: " +match);
                             match_name = dictionary.get(x).getName();
+                            //System.out.println("New Match: " + match);
+                            if (temp.equals("$")) {
+                                programs.add(tokens);
+                            }
                         }
                     }
-                    System.out.println(j);
-                    if(j+1 == line.length) {
-                        System.out.println("Token Added");
+                    if (dictionary.get(x).getValue().startsWith(temp)) {
+                        flag = true;
+                    }
+                }
+                if(!flag) {
+                    if (match.length() > 0) {
                         tokens.add(match);
-                        System.out.println("DEBUG Lexer - " +  match_name + " [ " + match + " ] found at (" + (i+1) + ":" + (position+1) + ")");
-                        if(temp.length() != match.length())
-                            j = j - (temp.length() - match.length());
+                        System.out.println("DEBUG Lexer - " + match_name + " [ " + match + " ] found at (" + (i+1) + ":" + (j - match.length() + 1) + ")");
+                        j = j - (temp.length() - match.length());
                         match = "";
                         temp = "";
+                    } else {
+                        System.out.println("ERROR Lexer - Error:" + (i + 1) + ":" + (j + 1) + " Unrecognized Token: " + temp);
                     }
-
+                }
+                else if(j+1 == line.length) {
+                    if(temp.length() == match.length()) {
+                        //System.out.println("Token Added");
+                        tokens.add(match);
+                        System.out.println("DEBUG Lexer - " +  match_name + " [ " + match + " ] found at (" + (i+1) + ":" + (position+1) + ")");
+                    }
+                    else
+                        j = j - (temp.length() - match.length());
+                    match = "";
+                    temp = "";
                 }
             }
         }
@@ -87,6 +85,7 @@ public class Compiler{
         dictionary.add(new Lexeme("INT_TYPE","int"));
         dictionary.add(new Lexeme("STRING_TYPE","string"));
         dictionary.add(new Lexeme("BOOLEAN_TYPE","boolean"));
+        dictionary.add(new Lexeme("SPACE"," "));
         dictionary.add(new Lexeme("CHAR","a"));
         dictionary.add(new Lexeme("CHAR","b"));
         dictionary.add(new Lexeme("CHAR","c"));
@@ -124,10 +123,11 @@ public class Compiler{
         dictionary.add(new Lexeme("DIGIT","8"));
         dictionary.add(new Lexeme("DIGIT","9"));
         dictionary.add(new Lexeme("BOOLOP","=="));
+        dictionary.add(new Lexeme("BOOLOP","!="));
         dictionary.add(new Lexeme("BOOLVAL","false"));
         dictionary.add(new Lexeme("BOOLVAL","true"));
         dictionary.add(new Lexeme("INTOP","+"));
-
+        dictionary.add(new Lexeme("EOP","$"));
         return dictionary;
     }
 }
