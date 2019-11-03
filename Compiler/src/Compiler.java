@@ -21,19 +21,21 @@ public class Compiler{
         while ((c = br.read()) != -1) {
             character = String.valueOf((char)c);
             program = program + character;
-            //makes program when it finds a EOP symbol
+            //makes program as string when it finds a EOP symbol
             if(character.equals("$")) {
                 programs_string.add(program);
                 program = "";
             }
         }
+        //checks to see if there is a missing EOP symbol at EOF
         if(program.length()!=0) {
             System.out.println("Warning Lexer - WARNING: No end of program symbol. Added EOP symbol at EOF");
             program = program + ("$");
             programs_string.add(program);
         }
-
+        //compiles each program
         for(int i=0; i<programs_string.size();i++) {
+            //lexer
             System.out.println("INFO  Lexer - Lexing program " + (i+1) + "...");
             lex(programs_string.get(i));
 
@@ -43,12 +45,16 @@ public class Compiler{
     public static ArrayList<Lexeme> lex(String program) {
         ArrayList<Lexeme> tokens = new ArrayList<Lexeme>();
         //creates a dictionary of tokens
-        int errors = 0;
         ArrayList<Lexeme> dictionary = createDictionary();
+        //counter of errors
+        int errors = 0;
+        //declaration of variables concerning token building
         String word="";
         String match = "";
         String match_name = "";
+        //iterates through every character of the program
         for (int i = 0; i < program.length(); i++) {
+            //checks for comments
             if (((program.charAt(i) == '/') && (program.charAt(i + 1) == '*'))) {
                 while ((program.charAt(i) != '*') || (program.charAt(i + 1) != '/')) {
                     i++;
@@ -59,42 +65,60 @@ public class Compiler{
                 }
                 i = i + 2;
             }
+            //checks if character is whitespace
             else if(Character.isWhitespace((program.charAt(i)))) {
             }
+            //token builder
             else {
+                //building word to compare to token list
                 word = word + (program.charAt(i));
                 //System.out.println("Character: " +program.charAt(i));
                 //System.out.println("Word: " + word);
                 //System.out.println("Current match: " +match);
+
+                //in dictionary flag
                 boolean flag = false;
+                //compare word to dictionary of tokens
                 for (int x = 0; x < dictionary.size(); x++) {
+                    //if the word matches a token
                     if (word.equals(dictionary.get(x).getValue())) {
                         if (word.equals(" ")) {
                             word = "";
                         } else {
+                            //sets the match to the current word
                             match = word;
                             match_name = dictionary.get(x).getName();
                             //System.out.println("New Match: " + match);
                         }
                     }
+                    //checks to see if there are tokens based on the word
                     if (dictionary.get(x).getValue().startsWith(word)) {
                         flag = true;
                     }
                 }
+                //if there are no more tokens that can be built from the current word
                 if (!flag) {
+                    //if there is a match
                     if (match.length() > 0) {
+                        //add match to token list/create token
                         tokens.add(new Lexeme(match, match_name));
                         System.out.println("DEBUG Lexer - " + match_name + " [ " + match + " ]");
+                        //resets the character position to the last character not counted as a token
                         i = i - (word.length() - match.length());
+                        //resets the word and match after adding token
                         match = "";
                         word = "";
                     } else {
+                        //this means that the current character is not in the dictionary and is an unrecognized token
                         errors++;
                         System.out.println("ERROR Lexer - Error: Unrecognized Token: " + word);
                         word = "";
                     }
+                 //if current character is the last character
                 } else if (i + 1 == program.length()) {
+                    //checks if the current character finished a token
                     if (word.length() == match.length()) {
+                        //adds token to token list
                         //System.out.println("Token Added");
                         tokens.add(new Lexeme(match, match_name));
                         System.out.println("DEBUG Lexer - " + match_name + " [ " + match + " ]");
