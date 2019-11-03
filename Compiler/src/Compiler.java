@@ -4,71 +4,110 @@ import java.util.*;
 public class Compiler{
     public static void main(String args[]) throws Exception {
         System.out.println("Colin's Compiler");
+
+        //takes in the file
         File file = new File(args[0]);
         BufferedReader br = new BufferedReader(new FileReader(file));
-        String ln;
+        StringBuilder sb = new StringBuilder();
+
+        //creates a list of programs
+        ArrayList<ArrayList<Lexeme>> programs = new ArrayList<ArrayList<Lexeme>>();
+        ArrayList<String> programs_string = new ArrayList<String>();
+
+        //divides file into programs to be lexed
+        String program = "";
+        int c;
+        String character=null;
+        while ((c = br.read()) != -1) {
+            character = String.valueOf((char)c);
+            program = program + character;
+            //makes program when it finds a EOP symbol
+            if(character.equals("$")) {
+                programs_string.add(program);
+                program = "";
+            }
+        }
+        if(program.length()!=0) {
+            System.out.println("Warning Lexer - WARNING: No end of program symbol. Added EOP symbol at EOF");
+            program = program + ("$");
+            programs_string.add(program);
+        }
+
+        for(int i=0; i<programs_string.size();i++) {
+            System.out.println("INFO  Lexer - Lexing program " + (i+1) + "...");
+            lex(programs_string.get(i));
+
+        }
+    }
+
+    public static ArrayList<Lexeme> lex(String program) {
+        ArrayList<Lexeme> tokens = new ArrayList<Lexeme>();
+        //creates a dictionary of tokens
+        int errors = 0;
         ArrayList<Lexeme> dictionary = createDictionary();
-        ArrayList<ArrayList<String>> programs = new ArrayList<ArrayList<String>>();
-        ArrayList<String> tokens = new ArrayList<String>();
-        ArrayList<String> lines = new ArrayList<String>();
-        String temp = "";
+        String word="";
         String match = "";
         String match_name = "";
-        int position=0;
-        while ((ln = br.readLine()) != null) {
-            lines.add(ln);
-        }
-        System.out.println("INFO  Lexer - Lexing program " + (programs.size()+1) + "...");
-        for (int i = 0; i < lines.size(); i++) {
-            char[] line = lines.get(i).toString().toLowerCase().toCharArray();
-            //System.out.println("Line Size: " + line.length);
-            for (int j = 0; j < line.length; j++) {
-                temp = temp + line[j];
-                //System.out.println("Character: " +line[j]);
-                //System.out.println("Temp: " + temp);
+        for (int i = 0; i < program.length(); i++) {
+            if (((program.charAt(i) == '/') && (program.charAt(i + 1) == '*'))) {
+                while ((program.charAt(i) != '*') || (program.charAt(i + 1) != '/')) {
+                    i++;
+                    if ((i + 1) == program.length()) {
+                        System.out.println("ERROR Lexer - Error: No End of Comment by End of Line");
+                        System.exit(0);
+                    }
+                }
+                i = i + 2;
+            }
+            else if(Character.isWhitespace((program.charAt(i)))) {
+            }
+            else {
+                word = word + (program.charAt(i));
+                //System.out.println("Character: " +program.charAt(i));
+                //System.out.println("Word: " + word);
                 //System.out.println("Current match: " +match);
                 boolean flag = false;
-                for(int x = 0; x < dictionary.size(); x++) {
-                    if (temp.equals(dictionary.get(x).getValue())) {
-                        if (temp.equals(" ")) {
-                            temp = "";
+                for (int x = 0; x < dictionary.size(); x++) {
+                    if (word.equals(dictionary.get(x).getValue())) {
+                        if (word.equals(" ")) {
+                            word = "";
                         } else {
-                            match = temp;
+                            match = word;
                             match_name = dictionary.get(x).getName();
                             //System.out.println("New Match: " + match);
-                            if (temp.equals("$")) {
-                                programs.add(tokens);
-                            }
                         }
                     }
-                    if (dictionary.get(x).getValue().startsWith(temp)) {
+                    if (dictionary.get(x).getValue().startsWith(word)) {
                         flag = true;
                     }
                 }
-                if(!flag) {
+                if (!flag) {
                     if (match.length() > 0) {
-                        tokens.add(match);
-                        System.out.println("DEBUG Lexer - " + match_name + " [ " + match + " ] found at (" + (i+1) + ":" + (j - match.length() + 1) + ")");
-                        j = j - (temp.length() - match.length());
+                        tokens.add(new Lexeme(match, match_name));
+                        System.out.println("DEBUG Lexer - " + match_name + " [ " + match + " ]");
+                        i = i - (word.length() - match.length());
                         match = "";
-                        temp = "";
+                        word = "";
                     } else {
-                        System.out.println("ERROR Lexer - Error:" + (i + 1) + ":" + (j + 1) + " Unrecognized Token: " + temp);
+                        errors++;
+                        System.out.println("ERROR Lexer - Error: Unrecognized Token: " + word);
+                        word = "";
                     }
-                }
-                else if(j+1 == line.length) {
-                    if(temp.length() == match.length()) {
+                } else if (i + 1 == program.length()) {
+                    if (word.length() == match.length()) {
                         //System.out.println("Token Added");
-                        tokens.add(match);
-                        System.out.println("DEBUG Lexer - " +  match_name + " [ " + match + " ] found at (" + (i+1) + ":" + (position+1) + ")");
-                    }
-                    else
-                        j = j - (temp.length() - match.length());
+                        tokens.add(new Lexeme(match, match_name));
+                        System.out.println("DEBUG Lexer - " + match_name + " [ " + match + " ]");
+                    } else
+                        i = i - (word.length() - match.length());
                     match = "";
-                    temp = "";
+                    word = "";
                 }
             }
         }
+        System.out.println("INFO  Lexer - Lex complete with " + errors + " errors");
+        System.out.println();
+        return tokens;
     }
 
     public static ArrayList<Lexeme> createDictionary() {
@@ -81,7 +120,7 @@ public class Compiler{
         dictionary.add(new Lexeme("ASSIGN_OP","="));
         dictionary.add(new Lexeme("WHILE_OP","while"));
         dictionary.add(new Lexeme("IF_OP","if"));
-        dictionary.add(new Lexeme("QUOTE","'"));
+        dictionary.add(new Lexeme("QUOTE","\""));
         dictionary.add(new Lexeme("INT_TYPE","int"));
         dictionary.add(new Lexeme("STRING_TYPE","string"));
         dictionary.add(new Lexeme("BOOLEAN_TYPE","boolean"));
