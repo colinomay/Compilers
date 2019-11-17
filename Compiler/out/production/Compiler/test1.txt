@@ -3,13 +3,17 @@
 	string b
     a = 1
     {
-        int a
-        int a
-        print(a)
+        int c
+		c = 2
+        print(c)
+		int f
+		f = 3
     }
     {
-        while (a != 5) {
-            a = 1 + a
+        int l
+		while (a != 5) {
+            int t
+			a = 1 + a
             print("hello")
         }
         print(3 + a)

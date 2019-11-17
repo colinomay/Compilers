@@ -6,6 +6,7 @@ public class Compiler {
     public static ArrayList<ArrayList<Lexeme>> programs = new ArrayList<ArrayList<Lexeme>>();
     public static ArrayList<String> programs_string = new ArrayList<String>();
     public static boolean quote = false;
+    public static SymbolTable root = null;
 
     public static void main(String args[]) throws Exception {
         System.out.println("Colin's Compiler");
@@ -60,6 +61,8 @@ public class Compiler {
             System.out.println("INFO  Semantic Analysis - AST for program " + (i + 1) + "...");
             transverse(AST, 0);
             semanticAnalysis(AST,null,AST.level);
+            //System.out.println(root);
+            transverseSymbolTable(root);
             if(errors>0) {
                 System.out.println("Semantic Analysis found errors, stopping Compiler on program: " + (i + 1));
                 continue;
@@ -676,6 +679,7 @@ public class Compiler {
         return AST;
     }
 
+
     private static void semanticAnalysis(SyntaxTreeNode AST, SymbolTable symboltable,int currentlevel) {
         double scope;
         if (errors == 0) {
@@ -688,8 +692,8 @@ public class Compiler {
                 if(AST.getParent().level != currentlevel) {
                     symboltable = symboltable.getParent();
                 }
-                    scope = symboltable.getChildren().size() / 10;
-                    SymbolTable newscope = new SymbolTable(symboltable, ((double) ((int) symboltable.getScope()) + 1.0 + scope));
+                    scope = (symboltable.getChildren().size()/10.0);
+                    SymbolTable newscope = new SymbolTable(symboltable, (((int)(symboltable.getScope())) + 1.0 + scope));
                     symboltable.addChild(newscope);
                     symboltable = newscope;
                     currentlevel = AST.level;
@@ -709,17 +713,39 @@ public class Compiler {
                 }
             } else if (AST.getName().equals("Assign")) {
                String type = compare(AST, symboltable);
-            } else if (AST.getName().equals("Not Equal")) {
+            } else if (AST.getName().equals("NotEqual")) {
                 String type = compare(AST, symboltable);
             } else if (AST.getName().equals("IsEqual")) {
                 String type = compare(AST, symboltable);
             } else if(AST.getName().equals("Add")) {
                 String type = compare(AST, symboltable);
+            } else if(AST.getName().equals("Print")) {
+                Symbol symbol = findVar(AST.getChild(0),symboltable,null);
             }
             for (int i = 0; i < AST.getChildren().size(); i++) {
                 if(AST.getChildren().size()>0) {
-                    semanticAnalysis(AST.getChild(i), symboltable,currentlevel);
+                   semanticAnalysis(AST.getChild(i), symboltable,currentlevel);
                 }
+            }
+            if(symboltable!=null){
+                root = symboltable;
+            }
+        }
+    }
+
+    public static void transverseSymbolTable(SymbolTable symboltable) {
+        for(int j=0; j<symboltable.getSymbols().size();j++) {
+            if(symboltable.getSymbol(j).getUsed()==false){
+                if(symboltable.getSymbol(j).getInitialized()==false){
+                    System.out.println("Warning: ID:<"+symboltable.getSymbol(j).getValue()+"> is not initialized and not used in scope: "+(symboltable.getScope()+1));
+                } else if(symboltable.getSymbol(j).getInitialized()==true){
+                    System.out.println("Warning: ID:<"+symboltable.getSymbol(j).getValue()+"> is initialized but is not used in scope: "+(symboltable.getScope()+1));
+                }
+            }
+        }
+        if (symboltable.getChildren().size() > 0) {
+            for (int i = 0; i < symboltable.getChildren().size(); i++) {
+                transverseSymbolTable(symboltable.getChild(i));
             }
         }
     }
@@ -730,6 +756,16 @@ public class Compiler {
         } else {
             for (int i = 0; i < symboltable.getSymbols().size(); i++) {
                 if (symboltable.getSymbol(i).getValue().equals(AST.getName())) {
+                    if (AST.getParent().getName().equals("Assign")) {
+                        symboltable.getSymbol(i).setInitialized(true);
+                        var = symboltable.getSymbol(i);
+                    }
+                    else if(AST.getParent().getName().equals("Print")||AST.getParent().getName().equals("IsEqual")||AST.getParent().getName().equals("Add")||AST.getParent().getName().equals("NotEqual")) {
+                        if(symboltable.getSymbol(i).getInitialized()==false) {
+                            System.out.println("Warning: ID: <"+symboltable.getSymbol(i).getValue()+"> is being used without be initialized");
+                        }
+                        symboltable.getSymbol(i).setUsed(true);
+                    }
                     var = symboltable.getSymbol(i);
                 }
             }
@@ -756,6 +792,7 @@ public class Compiler {
                         }
                         else {
                             left = var.getType();
+
                         }
                     } else if (node.getChild(i).getName().length() == 1 && Character.isDigit(node.getChild(i).getName().charAt(0))) {
                         left = "int";
