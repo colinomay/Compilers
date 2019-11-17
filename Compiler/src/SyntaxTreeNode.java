@@ -4,6 +4,7 @@ public class SyntaxTreeNode {
     private String name;
     private LinkedList<SyntaxTreeNode> children;
     private SyntaxTreeNode parent;
+    int level=0;
 
     public SyntaxTreeNode(String name, SyntaxTreeNode parent) {
         this.name = name;
