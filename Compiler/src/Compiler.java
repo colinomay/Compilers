@@ -61,14 +61,16 @@ public class Compiler {
             System.out.println("INFO  Semantic Analysis - AST for program " + (i + 1) + "...");
             transverse(AST, 0);
             semanticAnalysis(AST,null,AST.level);
-            //System.out.println(root);
-            transverseSymbolTable(root);
             if(errors>0) {
                 System.out.println("Semantic Analysis found errors, stopping Compiler on program: " + (i + 1));
                 continue;
             }
             else {
-                System.out.println("INFO  Semantic Analysis complete for program " + (i + 1) + "");
+                System.out.println("INFO  Semantic Analysis complete for program " + (i + 1));
+                checkSymbolTable(root);
+                System.out.println();
+                System.out.println("Symbol Table of program "+(i+1));
+                transverseSymbolTable(root);
             }
         }
     }
@@ -733,7 +735,7 @@ public class Compiler {
         }
     }
 
-    public static void transverseSymbolTable(SymbolTable symboltable) {
+    public static void checkSymbolTable(SymbolTable symboltable) {
         for(int j=0; j<symboltable.getSymbols().size();j++) {
             if(symboltable.getSymbol(j).getUsed()==false){
                 if(symboltable.getSymbol(j).getInitialized()==false){
@@ -742,6 +744,17 @@ public class Compiler {
                     System.out.println("Warning: ID:<"+symboltable.getSymbol(j).getValue()+"> is initialized but is not used in scope: "+(symboltable.getScope()+1));
                 }
             }
+        }
+        if (symboltable.getChildren().size() > 0) {
+            for (int i = 0; i < symboltable.getChildren().size(); i++) {
+                checkSymbolTable(symboltable.getChild(i));
+            }
+        }
+    }
+
+    public static void transverseSymbolTable(SymbolTable symboltable) {
+        for(int j=0; j<symboltable.getSymbols().size();j++) {
+            System.out.println("Type: <"+symboltable.getSymbol(j).getType()+">  Name: <"+symboltable.getSymbol(j).getValue()+">  Scope: <"+symboltable.getScope()+">");
         }
         if (symboltable.getChildren().size() > 0) {
             for (int i = 0; i < symboltable.getChildren().size(); i++) {
