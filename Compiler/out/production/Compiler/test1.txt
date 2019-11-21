@@ -1,16 +1,22 @@
 {
-    int a
-    a = 1
-    if(1 == 1){
-        print("nums")
-    }
-    if(a == a){
-        print("ids")
-    }
-    if("hey" == "hey"){
-        print("strings")
-    }
-    if(true == true){
-        print("booleans")
-    }
-} $
+   int a
+   a = 0
+   boolean b
+   b = false
+   boolean c
+   c = true
+   while (((a != 9) == ("test" != "alan")) == ((5==5) != (b == c)))
+   {
+       print ("a")
+       string d
+       d = "yes"
+       print (d)
+       {
+          int a
+          a = 5
+       }
+	   {
+	      boolean e
+	   }
+   }
+}$
