@@ -1,12 +1,12 @@
 import java.io.*;
 import java.util.*;
-
 public class Compiler {
     public static int errors = 0;
     public static ArrayList<ArrayList<Lexeme>> programs = new ArrayList<ArrayList<Lexeme>>();
     public static ArrayList<String> programs_string = new ArrayList<String>();
     public static boolean quote = false;
     public static SymbolTable root = null;
+    public static SymbolTable currentscope= null;
 
     public static void main(String args[]) throws Exception {
         System.out.println("Colin's Compiler");
@@ -645,11 +645,17 @@ public class Compiler {
             AST.addChild(If);
             AST = If;
         } else if (CST.getName().equals("CharList") && !quote) {
-            SyntaxTreeNode Quote = new SyntaxTreeNode(CST.getChild(0).getName(), AST);
+            SyntaxTreeNode Quote = new SyntaxTreeNode("\"", AST);
             AST.addChild(Quote);
-            Quote.setName("\"" + CST.getChild(0).getName());
+            if(CST.getChildren().size()>0) {
+                Quote.setName(Quote.getName()+CST.getChild(0).getName());
+                quote = true;
+            }
+            else {
+                Quote.setName(Quote.getName()+"\"");
+                quote=false;
+            }
             AST = Quote;
-            quote = true;
         } else if (CST.getName().equals("CharList") && quote) {
             if (CST.getChildren().size() == 0) {
                 AST.setName(AST.getName() + "\"");
@@ -739,9 +745,9 @@ public class Compiler {
         for(int j=0; j<symboltable.getSymbols().size();j++) {
             if(symboltable.getSymbol(j).getUsed()==false){
                 if(symboltable.getSymbol(j).getInitialized()==false){
-                    System.out.println("Warning: ID:<"+symboltable.getSymbol(j).getValue()+"> is not initialized and not used in scope: "+(symboltable.getScope()+1));
+                    System.out.println("Warning: ID:<"+symboltable.getSymbol(j).getValue()+"> is not initialized and not used in scope: "+(symboltable.getScope()));
                 } else if(symboltable.getSymbol(j).getInitialized()==true){
-                    System.out.println("Warning: ID:<"+symboltable.getSymbol(j).getValue()+"> is initialized but is not used in scope: "+(symboltable.getScope()+1));
+                    System.out.println("Warning: ID:<"+symboltable.getSymbol(j).getValue()+"> is initialized but is not used in scope: "+(symboltable.getScope()));
                 }
             }
         }
@@ -812,7 +818,10 @@ public class Compiler {
                     } else if (node.getChild(i).getName().equals("false") || node.getChild(i).getName().equals("true")) {
                         left = "boolean";
                     } else if (node.getChild(i).getName().charAt(0) == '\"') {
-                        left = "String";
+                        left = "string";
+                    }
+                    else {
+                        left = compare(node.getChild(0),symboltable);
                     }
                 }
                 else if(i==1){
@@ -831,7 +840,7 @@ public class Compiler {
                         } else if (node.getChild(i).getName().equals("false") || node.getChild(i).getName().equals("true")) {
                             right = "boolean";
                         } else if (node.getChild(i).getName().charAt(0) == '\"') {
-                            right = "String";
+                            right = "string";
                         } else {
                             right = compare(node.getChild(1), symboltable);
                         }
@@ -840,7 +849,12 @@ public class Compiler {
             if (left==null || right==null) {
                 errors++;
             } else if(left.equals(right)) {
-                type=left;
+                if(node.getName().equals("NotEqual")||node.getName().equals("IsEqual")) {
+                    type="boolean";
+                }
+                else {
+                    type=left;
+                }
             } else {
                 System.out.println("Type Mismatch with Operation: \""+node.getName()+"\". Expecting: "+left+". Got: "+right);
                 errors++;
