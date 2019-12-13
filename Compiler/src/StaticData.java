@@ -1,22 +1,30 @@
 public class StaticData {
     String tempAddress;
     String var;
-    int scope;
+    double scope;
     int offset;
     String actualAddress;
+    String type;
 
-    public StaticData(String t, String v, int s, int o) {
+    public StaticData(String t, String v, double s, int o) {
         tempAddress = t;
         var = v;
         scope = s;
         offset = o;
     }
 
-    public StaticData(String v, int s) {
+    public StaticData(String v, double s, int o, String t) {
         var = v;
         scope = s;
+        offset = o;
+        type = t;
     }
 
+    public StaticData(String v, double s, String t) {
+        var = v;
+        scope = s;
+        type = t;
+    }
     //returns temp address as hex string
     public String getTempAddress() {
         return tempAddress;
@@ -31,7 +39,7 @@ public class StaticData {
         return var;
     }
 
-    public int getScope() {
+    public double getScope() {
         return scope;
     }
 

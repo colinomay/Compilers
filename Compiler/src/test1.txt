@@ -12,7 +12,5 @@
        print(c)
      }
    }
-   print(b)
    print(a)
-   a=4+b
 }$

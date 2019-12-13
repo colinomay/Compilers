@@ -72,7 +72,7 @@ public class Compiler {
                 checkSymbolTable(root);
                 System.out.println();
                 System.out.println("Symbol Table of program "+(i+1));
-                transverseSymbolTable(root);
+                StaticDataTable  table = transverseSymbolTable(root);
             }
         }
     }
@@ -695,8 +695,7 @@ public class Compiler {
         return AST;
     }
 
-
-    private static void semanticAnalysis(SyntaxTreeNode AST, SymbolTable symboltable,int currentlevel) {
+    private static void semanticAnalysis(SyntaxTreeNode AST, SymbolTable symboltable,double currentlevel) {
         double scope;
         if (errors == 0) {
             if (AST.getName().equals("Block") && symboltable ==null) {
@@ -772,8 +771,10 @@ public class Compiler {
         }
     }
 
-    public static void transverseSymbolTable(SymbolTable symboltable) {
+    public static StaticDataTable transverseSymbolTable(SymbolTable symboltable) {
+        StaticDataTable table = new StaticDataTable();
         for(int j=0; j<symboltable.getSymbols().size();j++) {
+            table.add(new StaticData(symboltable.getSymbol(j).getValue(),symboltable.getScope(),table.getTable().size(),symboltable.getSymbol(j).getType()));
             System.out.println("Type: <"+symboltable.getSymbol(j).getType()+">  Name: <"+symboltable.getSymbol(j).getValue()+">  Scope: <"+symboltable.getScope()+">");
         }
         if (symboltable.getChildren().size() > 0) {
@@ -781,6 +782,7 @@ public class Compiler {
                 transverseSymbolTable(symboltable.getChild(i));
             }
         }
+        return table;
     }
 
     public static Symbol findVar(SyntaxTreeNode AST, SymbolTable symboltable, Symbol var) {
@@ -936,8 +938,79 @@ public class Compiler {
         return dictionary;
     }
 
-    public static String codeGen(SyntaxTreeNode AST, SymbolTable symbolTable) {
-        String code = "";
-
+    public static ArrayList<String> codeGen(SyntaxTreeNode AST, ArrayList<String> code, StaticDataTable table) {
+        if(AST.getName().equals("VarDecl")) {
+            if (AST.getChild(0).equals("int") || AST.getChild(0).equals("boolean")) {
+                code.add("A9");
+                code.add("00");
+                code.add("8D");
+                StaticData d = table.get(AST.getChild(1).getName(), AST.level,"");
+                table.getTable().get(table.getTable().size() - 1).tempAddress = ("T" + (table.getTable().size() - 1));
+                code.add("T" + d.offset);
+                code.add("00");
+            }
+        }
+        else if(AST.getName().equals("Assign")) {
+            code.add("A9");
+            String id = AST.getChild(0).getName();
+            StaticData d = table.get(id, AST.level, "");
+            String type = d.type;
+            if(AST.getChild(1).getChildren().size()>0)  {
+                code = codeGen(AST.getChild(1),code,table);
+            }
+            else if (AST.getChild(1).getName().equals("true") && type.equals("boolean")) {
+                code.add("01");
+            } else if (AST.getChild(1).getName().equals("false") && type.equals("boolean")) {
+                code.add("00");
+            } else {
+                code.add("0" + AST.getChild(1).getName());
+            }
+            code.add("8D");
+            code.add(d.tempAddress);
+            code.add("00");
+        }
+        else if(AST.getName().equals("Print")) {
+            if(AST.getChild(0).getChildren().size()>0) {
+                code = codeGen(AST.getChild(0),code,table);
+            }
+            else {
+                if(AST.getChild(0).getName().equals("true")) {
+                    code.add("A0");
+                    code.add("01");
+                    code.add("A2");
+                    code.add("01");
+                    code.add("FF");
+                }
+                else if(AST.getChild(0).getName().equals("true")) {
+                    code.add("A0");
+                    code.add("00");
+                    code.add("A2");
+                    code.add("01");
+                    code.add("FF");
+                }
+                else if(Character.isDigit(AST.getChild(0).getName().charAt(0))&&AST.getChild(0).getName().length()==1) {
+                    code.add("AO");
+                    code.add("0"+AST.getChild(0).getName());
+                    code.add("A2");
+                    code.add("01");
+                    code.add("FF");
+                }
+                else if(Character.isLetter(AST.getChild(0).getName().charAt(0))&&(AST.getChild(0).getName().length()==1)) {
+                    StaticData d = table.get(AST.getChild(0).getName(), AST.level,"");
+                    code.add("AC");
+                    code.add(d.tempAddress);
+                    code.add("00");
+                    code.add("A2");
+                    code.add("01");
+                    code.add("FF");
+                }
+            }
+        }
+        for (int i = 0; i < AST.getChildren().size(); i++) {
+            if(AST.getChildren().size()>0) {
+                codeGen(AST.getChild(i), code,table);
+            }
+        }
+        return code;
     }
 }
