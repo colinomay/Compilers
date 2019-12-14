@@ -5,6 +5,7 @@ public class SyntaxTreeNode {
     private LinkedList<SyntaxTreeNode> children;
     private SyntaxTreeNode parent;
     double level=0;
+    double scope;
 
     public SyntaxTreeNode(String name, SyntaxTreeNode parent) {
         this.name = name;

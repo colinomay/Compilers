@@ -17,13 +17,13 @@ public class StaticDataTable {
     }
 
     //method to iterate through table and retrieve the static data object
-    public StaticData get(String var, double s, String t) {
-        if (containsEntry(var, s, t)) {
-            StaticData temp = new StaticData(var, s, t);
+    public StaticData get(String var, double s) {
+        if (containsEntry(var, s)) {
+            StaticData temp = new StaticData(var, s);
             Iterator it = table.iterator();
             while (it.hasNext()) {
                 StaticData next = (StaticData)it.next();
-                if (next.equals(temp)) {
+                if (next.var.equals(temp.var)&&next.scope==temp.scope) {
                     return next;
                 }
             }
@@ -32,11 +32,11 @@ public class StaticDataTable {
     }
 
     //gets a static data object based on the var and scope
-    public boolean containsEntry(String var, double s, String t) {
-        StaticData temp = new StaticData(var, s, t);
+    public boolean containsEntry(String var, double s) {
+        StaticData temp = new StaticData(var, s);
         boolean contains = false;
         for (StaticData k : table) {
-            if (k.equals(temp)) {
+            if (k.var.equals(temp.var)&&(k.scope==temp.scope)) {
                 contains = true;
             }
         }

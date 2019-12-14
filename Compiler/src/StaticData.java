@@ -20,6 +20,11 @@ public class StaticData {
         type = t;
     }
 
+    public StaticData(String v, double s) {
+        var = v;
+        scope = s;
+    }
+
     public StaticData(String v, double s, String t) {
         var = v;
         scope = s;

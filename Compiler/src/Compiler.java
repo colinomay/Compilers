@@ -63,6 +63,7 @@ public class Compiler {
             System.out.println("INFO  Semantic Analysis - AST for program " + (i + 1) + "...");
             transverse(AST, 0);
             semanticAnalysis(AST,null,AST.level);
+            StaticDataTable  table;
             if(errors>0) {
                 System.out.println("Semantic Analysis found errors, stopping Compiler on program: " + (i + 1));
                 continue;
@@ -72,8 +73,21 @@ public class Compiler {
                 checkSymbolTable(root);
                 System.out.println();
                 System.out.println("Symbol Table of program "+(i+1));
-                StaticDataTable  table = transverseSymbolTable(root);
+                 table = transverseSymbolTable(root);
             }
+            SymbolTable s = new SymbolTable();
+            root.setParent(s);
+            s.addChild(root);
+            root = s;
+            /*ArrayList<String> code = codeGen(AST,new ArrayList<String>(),table,root);
+            System.out.print(code.get(1));
+            if(errors!=0) {
+                //ArrayList<String> code = codeGen(AST,new ArrayList<String>(),table,root);
+                System.out.print(code.get(1));
+                for(String x:code) {
+                    System.out.print(x+" ");
+                }
+            }*/
         }
     }
 
@@ -722,6 +736,7 @@ public class Compiler {
                 if (inscope == false) {
                     //System.out.println(AST.getChild(0).getName()+ AST.getChild(1).getName());
                     symboltable.addSymbol(new Symbol(AST.getChild(0).getName(), AST.getChild(1).getName()));
+                    AST.getChild(0).scope = symboltable.getScope();
                 } else {
                     System.out.println("ID: " + AST.getChild(1).getName() + " has already been declared in this scope");
                     errors++;
@@ -938,13 +953,24 @@ public class Compiler {
         return dictionary;
     }
 
-    public static ArrayList<String> codeGen(SyntaxTreeNode AST, ArrayList<String> code, StaticDataTable table) {
+    public static ArrayList<String> codeGen(SyntaxTreeNode AST, ArrayList<String> code, StaticDataTable table, SymbolTable symbolTable) {
+        double l = AST.level;
+        SymbolTable s = new SymbolTable();
+        symbolTable.setParent(s);
+        s.addChild(symbolTable);
+        symbolTable = s;
+        if(AST.getName().equals("Block") && AST.level == symbolTable.getScope()) {
+            symbolTable = symbolTable.getParent().getChild(((int) (l%symbolTable.getScope()*10+1)));
+        }
+        else if(AST.getName().equals("Block") && AST.level != symbolTable.getScope()) {
+            symbolTable = symbolTable.getChild(0);
+        }
         if(AST.getName().equals("VarDecl")) {
             if (AST.getChild(0).equals("int") || AST.getChild(0).equals("boolean")) {
                 code.add("A9");
                 code.add("00");
                 code.add("8D");
-                StaticData d = table.get(AST.getChild(1).getName(), AST.level,"");
+                StaticData d = table.get(AST.getChild(1).getName(), symbolTable.getScope());
                 table.getTable().get(table.getTable().size() - 1).tempAddress = ("T" + (table.getTable().size() - 1));
                 code.add("T" + d.offset);
                 code.add("00");
@@ -953,14 +979,14 @@ public class Compiler {
         else if(AST.getName().equals("Assign")) {
             code.add("A9");
             String id = AST.getChild(0).getName();
-            StaticData d = table.get(id, AST.level, "");
-            String type = d.type;
-            if(AST.getChild(1).getChildren().size()>0)  {
-                code = codeGen(AST.getChild(1),code,table);
+            System.out.println(table.getTable().size());
+            StaticData d = table.get(id, symbolTable.getScope());
+            if(AST.getChild(1).getName().equals("ADD"))  {
+                code.addAll(codeGen(AST.getChild(1),code,table,symbolTable));
             }
-            else if (AST.getChild(1).getName().equals("true") && type.equals("boolean")) {
+            else if (AST.getChild(1).getName().equals("true")) {
                 code.add("01");
-            } else if (AST.getChild(1).getName().equals("false") && type.equals("boolean")) {
+            } else if (AST.getChild(1).getName().equals("false")) {
                 code.add("00");
             } else {
                 code.add("0" + AST.getChild(1).getName());
@@ -971,7 +997,7 @@ public class Compiler {
         }
         else if(AST.getName().equals("Print")) {
             if(AST.getChild(0).getChildren().size()>0) {
-                code = codeGen(AST.getChild(0),code,table);
+                code = codeGen(AST.getChild(0),code,table,symbolTable);
             }
             else {
                 if(AST.getChild(0).getName().equals("true")) {
@@ -996,7 +1022,7 @@ public class Compiler {
                     code.add("FF");
                 }
                 else if(Character.isLetter(AST.getChild(0).getName().charAt(0))&&(AST.getChild(0).getName().length()==1)) {
-                    StaticData d = table.get(AST.getChild(0).getName(), AST.level,"");
+                    StaticData d = table.get(AST.getChild(0).getName(), AST.level);
                     code.add("AC");
                     code.add(d.tempAddress);
                     code.add("00");
@@ -1008,7 +1034,7 @@ public class Compiler {
         }
         for (int i = 0; i < AST.getChildren().size(); i++) {
             if(AST.getChildren().size()>0) {
-                codeGen(AST.getChild(i), code,table);
+                code.addAll(codeGen(AST.getChild(i), code,table,symbolTable));
             }
         }
         return code;
